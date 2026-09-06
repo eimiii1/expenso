@@ -1,3 +1,4 @@
+import { AxiosError } from "axios"
 import {
   View,
   Text,
@@ -6,27 +7,52 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@/constants/colors";
-import { router } from "expo-router";
+  ActivityIndicator,
+} from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { colors } from "@/constants/colors"
+import { router } from "expo-router"
+import { useState } from "react"
+import api from "@/lib/api"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export default function LoginScreen() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const setAuth = useAuthStore((state) => state.setAuth)
+
+  const handleLogin = async () => {
+    setLoading(true)
+    try {
+      const res = await api.post("/auth/login", { email, password })
+      setAuth(res.data.user, res.data.token)
+      router.replace("/(tabs)/home")
+    } catch (error) {
+      const err = error as AxiosError<{ message: string }>
+      setError(err.response?.data?.message || "Something went wrong")
+      alert(err.response?.data?.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       style={{
         flex: 1,
       }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-       contentContainerStyle={{
-        flex: 1,
-        padding: 24,
-        paddingTop: 80,
-        justifyContent: 'center',
-        flexGrow: 1
-       }}
+        contentContainerStyle={{
+          flex: 1,
+          padding: 24,
+          paddingTop: 80,
+          justifyContent: "center",
+          flexGrow: 1,
+        }}
       >
         <Text
           style={{ fontSize: 36, fontWeight: "bold", color: colors.primary }}
@@ -34,7 +60,7 @@ export default function LoginScreen() {
           Welcome Back
         </Text>
         <Text style={{ fontSize: 16, color: colors.secondary, marginTop: 0 }}>
-            Your financial journey continues here.
+          Your financial journey continues here.
         </Text>
 
         <View
@@ -58,7 +84,7 @@ export default function LoginScreen() {
             }}
           >
             <Ionicons name="logo-google" size={20} color={colors.primary} />
-            <Text style={{fontWeight: 'bold'}}>Google</Text>
+            <Text style={{ fontWeight: "bold" }}>Google</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={{
@@ -75,7 +101,7 @@ export default function LoginScreen() {
             }}
           >
             <Ionicons name="logo-apple" size={20} color={colors.primary} />
-            <Text style={{fontWeight: 'bold'}}>Apple</Text>
+            <Text style={{ fontWeight: "bold" }}>Apple</Text>
           </TouchableOpacity>
         </View>
 
@@ -102,6 +128,8 @@ export default function LoginScreen() {
             placeholderTextColor={colors.secondary}
             keyboardType="email-address"
             autoCapitalize="none"
+            value={email}
+            onChangeText={text => setEmail(text)}
             style={{
               backgroundColor: colors.card,
               color: colors.primary,
@@ -117,6 +145,8 @@ export default function LoginScreen() {
             placeholder="Password"
             placeholderTextColor={colors.secondary}
             secureTextEntry
+            value={password}
+            onChangeText={text => setPassword(text)}
             style={{
               backgroundColor: colors.card,
               color: colors.primary,
@@ -143,11 +173,16 @@ export default function LoginScreen() {
               padding: 16,
               borderRadius: 16,
               width: "100%",
+              opacity: loading ? 0.6 : 1
             }}
+            onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={{ fontWeight: "bold", color: colors.background }}>
-              Sign In
-            </Text>
+            {loading ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <Text style={{color: colors.background, fontWeight: 'bold', fontSize: 16}}>Sign In</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -169,5 +204,5 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
+  )
 }
